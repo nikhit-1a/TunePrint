@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tuneprint — find a song by humming it</title>
+  <style>
+    :root {
+      --ink: #1c1a1e;
+      --paper: #f6f2ec;
+      --brass: #b8860b;
+      --brass-deep: #8a6508;
+      --plum: #4b2e5a;
+      --line: #d8d0c2;
+      --ok: #2f6b4f;
+      --err: #a13d2b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'Georgia', 'Iowan Old Style', serif;
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .wordmark {
+      font-size: 15px;
+      letter-spacing: 0.04em;
+      color: var(--plum);
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.25;
+      font-weight: 400;
+      margin: 0 0 8px;
+    }
+
+    .sub {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14.5px;
+      color: #6b6570;
+      max-width: 320px;
+      margin: 0 0 44px;
+      line-height: 1.5;
+    }
+
+    /* record button styled like a brass gramophone dial */
+    .dial {
+      position: relative;
+      width: 168px;
+      height: 168px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 30%, #cfa227, var(--brass) 55%, var(--brass-deep) 100%);
+      box-shadow:
+        0 10px 24px rgba(75, 46, 90, 0.18),
+        inset 0 2px 4px rgba(255, 255, 255, 0.35),
+        inset 0 -6px 10px rgba(0, 0, 0, 0.2);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .dial:active {
+      transform: scale(0.97);
+    }
+
+    .dial.recording {
+      background: radial-gradient(circle at 35% 30%, #d3573f, var(--err) 55%, #7a2a1c 100%);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 10px 24px rgba(161, 61, 43, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.35), inset 0 -6px 10px rgba(0, 0, 0, 0.25), 0 0 0 0 rgba(161, 61, 43, 0.35);
+      }
+
+      50% {
+        box-shadow: 0 10px 24px rgba(161, 61, 43, 0.25), inset 0 2px 4px rgba(255, 255, 255, 0.35), inset 0 -6px 10px rgba(0, 0, 0, 0.25), 0 0 0 14px rgba(161, 61, 43, 0);
+      }
+    }
+
+    .dial-label {
+      color: #fff8ea;
+      font-size: 13px;
+      letter-spacing: 0.05em;
+    }
+
+    .timer {
+      margin-top: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px;
+      color: #8a8390;
+      min-height: 18px;
+    }
+
+    .status {
+      margin-top: 28px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      color: #6b6570;
+      min-height: 20px;
+    }
+
+    .status.err {
+      color: var(--err);
+    }
+
+    /* result card */
+    .result {
+      margin-top: 32px;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 22px 20px;
+      background: #fffdf9;
+      display: none;
+      text-align: left;
+    }
+
+    .result.show {
+      display: block;
+    }
+
+    .result .kicker {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 12px;
+      color: var(--ok);
+      margin-bottom: 6px;
+    }
+
+    .result .kicker.miss {
+      color: var(--err);
+    }
+
+    .result h2 {
+      margin: 0 0 4px;
+      font-size: 22px;
+      font-weight: 400;
+    }
+
+    .result .artist {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14.5px;
+      color: #4b4650;
+      margin: 0 0 14px;
+    }
+
+    .result .meta {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 12.5px;
+      color: #8a8390;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .lang-row {
+      margin-top: 40px;
+      display: flex;
+      gap: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 12.5px;
+    }
+
+    .lang-pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 12px;
+      color: #6b6570;
+    }
+
+    footer {
+      margin-top: 56px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 11.5px;
+      color: #b0aab5;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="wordmark">TUNEPRINT</div>
+    <h1>Hum it. We'll name it.</h1>
+    <p class="sub">Hold the dial, hum or sing a few seconds of the tune, let go — we'll match it against the database.
+    </p>
+
+    <button class="dial" id="dial">
+      <span class="dial-label" id="dialLabel">HOLD TO<br>HUM</span>
+    </button>
+
+    <div class="timer" id="timer"></div>
+    <div class="status" id="status"></div>
+
+    <div class="result" id="result">
+      <!-- Results will be injected here -->
+    </div>
+
+    <div class="lang-row">
+      <span class="lang-pill">English</span>
+      <span class="lang-pill">తెలుగు</span>
+      <span class="lang-pill">हिन्दी</span>
+    </div>
+
+    <footer>Recognition powered by ACRCloud humming search.</footer>
+  </div>
+
+  <script>
+    // ---- CONFIGURE THIS -------------------------------------------------
+    // While testing locally, leave this as-is. Once you deploy the backend
+    // (e.g. to Render), replace it with that URL + /api/identify.
+    const WEBHOOK_URL = "http://localhost:3000/api/identify";
+    // ----------------------------------------------------------------------
+
+    const dial = document.getElementById('dial');
+    const dialLabel = document.getElementById('dialLabel');
+    const timerEl = document.getElementById('timer');
+    const statusEl = document.getElementById('status');
+    const resultEl = document.getElementById('result');
+
+    let mediaRecorder;
+    let chunks = [];
+    let stream;
+    let startTime;
+    let timerInterval;
+    const MAX_SECONDS = 12;
+
+    function setStatus(msg, isErr) {
+      statusEl.textContent = msg || '';
+      statusEl.classList.toggle('err', !!isErr);
+    }
+
+    function showResults(matches) {
+      resultEl.classList.add('show');
+      resultEl.innerHTML = '';
+
+      if (matches && matches.length > 0) {
+        matches.forEach((match, index) => {
+          const kickerText = index === 0 ? 'TOP MATCH' : `MATCH #${index + 1}`;
+          const title = match.title || 'Unknown title';
+          const artist = match.artist || 'Unknown artist';
+          const album = match.album || '';
+          const score = match.score ? `${match.score}% match` : '';
+          const spotifyId = match.spotifyId;
+          const youtubeId = match.youtubeId;
+
+          let linksHtml = '';
+          const searchQuery = encodeURIComponent(`${title} ${artist}`);
+          
+          if (spotifyId) {
+            linksHtml += `<a href="https://open.spotify.com/track/${spotifyId}" target="_blank" style="color: #1db954; text-decoration: none; font-weight: bold; margin-right: 12px;">Listen on Spotify</a>`;
+          } else {
+            linksHtml += `<a href="https://open.spotify.com/search/${searchQuery}" target="_blank" style="color: #1db954; text-decoration: none; font-weight: bold; margin-right: 12px;">Search on Spotify</a>`;
+          }
+
+          if (youtubeId) {
+            linksHtml += `<a href="https://www.youtube.com/watch?v=${youtubeId}" target="_blank" style="color: #ff0000; text-decoration: none; font-weight: bold;">Watch on YouTube</a>`;
+          } else {
+            linksHtml += `<a href="https://www.youtube.com/results?search_query=${searchQuery}" target="_blank" style="color: #ff0000; text-decoration: none; font-weight: bold;">Search on YouTube</a>`;
+          }
+
+          let metaHtml = '';
+          if (album) metaHtml += `<span>${album}</span>`;
+          if (score) metaHtml += `<span>${score}</span>`;
+          if (linksHtml) metaHtml += `<div style="width: 100%; margin-top: 8px;">${linksHtml}</div>`;
+
+          if (index > 0) {
+            resultEl.innerHTML += `<hr style="border: 0; border-top: 1px solid var(--line); margin: 24px 0;">`;
+          }
+
+          resultEl.innerHTML += `
+        <div class="kicker">${kickerText}</div>
+        <h2>${title}</h2>
+        <p class="artist">${artist}</p>
+        <div class="meta">
+          ${metaHtml}
+        </div>
+      `;
+        });
+      } else {
+        resultEl.innerHTML = `
+      <div class="kicker miss">NO MATCH</div>
+      <h2>Couldn't place that one</h2>
+      <p class="artist">Try humming a clearer, longer stretch of the melody.</p>
+    `;
+      }
+    }
+
+    async function startRecording() {
+      resultEl.classList.remove('show');
+      setStatus('');
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (e) {
+        setStatus('Microphone permission denied.', true);
+        return;
+      }
+      chunks = [];
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : '';
+      mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+      mediaRecorder.onstop = onRecordingStopped;
+      mediaRecorder.start();
+
+      dial.classList.add('recording');
+      dialLabel.innerHTML = 'RELEASE<br>TO STOP';
+      startTime = Date.now();
+      timerInterval = setInterval(() => {
+        const secs = ((Date.now() - startTime) / 1000).toFixed(1);
+        timerEl.textContent = secs + 's';
+        if (secs >= MAX_SECONDS) stopRecording();
+      }, 100);
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+      if (stream) stream.getTracks().forEach((t) => t.stop());
+      clearInterval(timerInterval);
+      dial.classList.remove('recording');
+      dialLabel.innerHTML = 'HOLD TO<br>HUM';
+    }
+
+    async function onRecordingStopped() {
+      const durationSec = (Date.now() - startTime) / 1000;
+      timerEl.textContent = '';
+      if (durationSec < 2) {
+        setStatus('Hold a little longer — at least 2-3 seconds.', true);
+        return;
+      }
+      const rawBlob = new Blob(chunks, { type: chunks[0]?.type || 'audio/webm' });
+      setStatus('Listening…');
+      try {
+        const wavBlob = await convertToWav(rawBlob);
+        await sendToServer(wavBlob);
+      } catch (err) {
+        console.error(err);
+        setStatus('Something went wrong reading the recording.', true);
+      }
+    }
+
+    // Decode whatever the browser recorded and re-encode as 16-bit PCM WAV,
+    // since that format is reliably accepted by the recognition API.
+    async function convertToWav(blob) {
+      const arrayBuffer = await blob.arrayBuffer();
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      const wavBuffer = encodeWav(audioBuffer);
+      audioCtx.close();
+      return new Blob([wavBuffer], { type: 'audio/wav' });
+    }
+
+    function encodeWav(audioBuffer) {
+      const numChannels = 1; // downmix to mono
+      const sampleRate = audioBuffer.sampleRate;
+      const numFrames = audioBuffer.length;
+
+      let samples;
+      if (audioBuffer.numberOfChannels > 1) {
+        const ch0 = audioBuffer.getChannelData(0);
+        const ch1 = audioBuffer.getChannelData(1);
+        samples = new Float32Array(numFrames);
+        for (let i = 0; i < numFrames; i++) samples[i] = (ch0[i] + ch1[i]) / 2;
+      } else {
+        samples = audioBuffer.getChannelData(0);
+      }
+
+      const bytesPerSample = 2;
+      const blockAlign = numChannels * bytesPerSample;
+      const dataSize = numFrames * blockAlign;
+      const buffer = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(buffer);
+
+      function writeString(offset, str) {
+        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+      }
+
+      writeString(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeString(8, 'WAVE');
+      writeString(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true); // PCM
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeString(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      let offset = 44;
+      for (let i = 0; i < numFrames; i++) {
+        let s = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+        offset += 2;
+      }
+
+      return buffer;
+    }
+
+    async function sendToServer(wavBlob) {
+      const formData = new FormData();
+      formData.append('audio', wavBlob, 'sample.wav');
+
+      try {
+        const res = await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('Server error ' + res.status);
+        const data = await res.json();
+        parseAndShow(data);
+      } catch (err) {
+        console.error(err);
+        setStatus('Could not reach the recognition service.', true);
+      }
+    }
+
+    // Adjust this to match whatever shape your n8n workflow returns.
+    function parseAndShow(data) {
+      setStatus('');
+      const humResults = data?.metadata?.humming;
+      if (humResults && humResults.length > 0) {
+
+        // The API often returns multiple possible matches. 
+        // To filter out Korean/Japanese matches, we skip results that contain CJK characters.
+        const cjkRegex = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/;
+        let validMatches = [];
+
+        for (const result of humResults) {
+          const title = result.title || '';
+          const artist = result.artists?.[0]?.name || '';
+          // If neither title nor artist contains Japanese/Korean/Chinese characters, pick it!
+          if (!cjkRegex.test(title) && !cjkRegex.test(artist)) {
+            const external = result.external_metadata || {};
+            validMatches.push({
+              title: result.title,
+              artist: result.artists?.[0]?.name,
+              album: result.album?.name,
+              score: result.score ? Math.round(parseFloat(result.score) * 100) : null,
+              spotifyId: external.spotify?.track?.id,
+              youtubeId: external.youtube?.vid
+            });
+
+            // Stop once we have 3 matches
+            if (validMatches.length >= 3) break;
+          }
+        }
+
+        if (validMatches.length > 0) {
+          showResults(validMatches);
+        } else {
+          showResults([]);
+        }
+      } else {
+        showResults([]);
+      }
+    }
+
+    // Hold-to-record on both mouse and touch
+    dial.addEventListener('mousedown', startRecording);
+    dial.addEventListener('mouseup', stopRecording);
+    dial.addEventListener('mouseleave', () => { if (mediaRecorder?.state === 'recording') stopRecording(); });
+    dial.addEventListener('touchstart', (e) => { e.preventDefault(); startRecording(); });
+    dial.addEventListener('touchend', (e) => { e.preventDefault(); stopRecording(); });
+  </script>
+</body>
+
+</html>
