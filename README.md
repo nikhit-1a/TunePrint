@@ -1,19 +1,22 @@
 # Tuneprint
 
-A lightweight web application that identifies songs simply by listening to you hum or sing. Built using Node.js and the ACRCloud Audio Recognition API.
+A hybrid web application that identifies songs by listening to you hum or sing. Powered concurrently by the **ACRCloud Audio Recognition API** (for melody matching) and **Deepgram + Apple iTunes Search API** (for lyrics transcription and matching).
 
 ## Features
-- **Humming Recognition**: Hold the button, hum a tune for a few seconds, and let the app match it against millions of songs.
-- **Smart Filtering**: Evaluates multiple results and filters out irrelevant regional databases to improve accuracy for targeted languages (like English, Hindi, and Telugu).
+- **Hybrid Recognition Engine**: Hold the button, hum a tune, or sing the lyrics. The app runs two distinct recognition engines at the same time:
+  - **Melody Search**: Analyzes your humming against ACRCloud's massive acoustic fingerprint database.
+  - **Lyrics Search**: Uses Deepgram's industry-leading Nova-2 AI to transcribe your singing in real-time (supporting Hindi, Telugu, English, etc.) and searches Apple's iTunes database for matches.
+- **Fail-Safe Architecture**: Both engines run independently. If one API fails to find a match, it seamlessly falls back on the results of the other.
+- **Smart Filtering & Badges**: Evaluates results and visually tags them in the UI with badges (`🎵 Found via Melody` or `🎤 Found via Lyrics`).
 - **External Links**: Automatically generates clickable Spotify and YouTube search links for every recognized song.
-- **Top Matches**: Neatly displays the top 3 best possible matches along with their confidence scores.
-- **Customizable**: Ready to be linked to a custom ACRCloud audio bucket if you want to upload your own specialized catalog of music.
+- **Top Matches**: Neatly displays the top 3 best possible matches.
 
 ## Getting Started
 
 ### Prerequisites
 - Node.js (v18 or higher recommended)
 - An [ACRCloud](https://www.acrcloud.com/) account and project credentials
+- A [Deepgram](https://deepgram.com/) API key (for fast AI transcription)
 
 ### Installation
 
@@ -29,12 +32,16 @@ A lightweight web application that identifies songs simply by listening to you h
    ```
 
 3. Set up environment variables:
-   Copy the `env.example` file to a new file named `.env` and fill in your ACRCloud credentials.
+   Create a `.env` file in the root directory and add your credentials:
    ```bash
-   # Create .env and update these values
+   # Deepgram API (For Lyrics matching)
+   DEEPGRAM_API_KEY=your_deepgram_api_key
+
+   # ACRCloud API (For Humming/Melody matching)
    ACR_HOST=identify-eu-west-1.acrcloud.com
    ACR_ACCESS_KEY=your_access_key_here
    ACR_ACCESS_SECRET=your_access_secret_here
+
    PORT=3000
    ```
 
@@ -45,9 +52,9 @@ A lightweight web application that identifies songs simply by listening to you h
    ```
 
 5. Open the Application:
-   Since the frontend is a standalone HTML file, you can simply double-click `index.html` to open it in your browser and start humming! (Ensure your backend is running in the terminal so it can process the requests).
+   Since the frontend is a standalone HTML file, simply double-click `index.html` to open it in your browser and start humming/singing! (Ensure your backend is running in the terminal).
 
 ## Tech Stack
 - **Frontend**: Vanilla HTML, CSS, JavaScript (MediaRecorder API for audio capture)
 - **Backend**: Node.js, Express, Multer
-- **API**: ACRCloud Identify API
+- **APIs**: Deepgram (Speech-to-Text), Apple iTunes Search, ACRCloud (Audio Fingerprinting)

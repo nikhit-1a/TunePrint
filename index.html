@@ -294,12 +294,12 @@
     <div class="wordmark">TUNEPRINT</div>
 
     <div id="pageHome" class="page active">
-      <h1>Hum it. We'll name it.</h1>
-      <p class="sub">Hold the dial, hum or sing a few seconds of the tune, let go — we'll match it against the database.
+      <h1>Hum or Sing it. We'll name it.</h1>
+      <p class="sub">Hold the dial, hum a tune or sing a few lines with lyrics, let go — we'll match it against the database.
       </p>
 
       <button class="dial" id="dial">
-        <span class="dial-label" id="dialLabel">HOLD TO<br>HUM</span>
+        <span class="dial-label" id="dialLabel">HOLD TO<br>HUM/SING</span>
       </button>
 
       <div class="timer" id="timer"></div>
@@ -324,16 +324,16 @@
     <div id="pageAbout" class="page">
       <div class="about-content">
         <h2>About Tuneprint</h2>
-        <p>Tuneprint is a web application that allows you to find songs by simply humming or singing the tune. Our audio
-          processing engine automatically cleans up your microphone input and matches it against a massive music
+        <p>Tuneprint is a web application that allows you to find songs by simply humming or singing the lyrics. Our hybrid audio
+          processing engine automatically transcribes your singing and matches it against a massive music
           database in real-time.</p>
         <p><strong>Disclaimer:</strong> This web application is strictly <strong>not for commercial use</strong>. It is
           provided for educational and non-profit purposes.</p>
-        <p>Developed by Mv Nikhit:)</p>
+        <p>Developed by Mv Nikhit :)</p>
       </div>
     </div>
 
-    <footer>Recognition powered by ACRCloud humming search.</footer>
+    <footer>Recognition powered by ACRCloud, Deepgram & Apple iTunes Search.</footer>
   </div>
 
   <script>
@@ -380,6 +380,7 @@
           const artist = match.artist || 'Unknown artist';
           const album = match.album || '';
           const score = match.score ? `${match.score}% match` : '';
+          const sourceBadge = match.source === 'Melody' ? '🎵 Found via Melody' : '🎤 Found via Lyrics';
           const spotifyId = match.spotifyId;
           const youtubeId = match.youtubeId;
 
@@ -401,6 +402,7 @@
           let metaHtml = '';
           if (album) metaHtml += `<span>${album}</span>`;
           if (score) metaHtml += `<span>${score}</span>`;
+          if (sourceBadge) metaHtml += `<span style="color: var(--plum); font-weight: bold;">${sourceBadge}</span>`;
           if (linksHtml) metaHtml += `<div style="width: 100%; margin-top: 8px;">${linksHtml}</div>`;
 
           if (index > 0) {
@@ -496,7 +498,7 @@
       // Stream is kept alive to avoid requesting permissions repeatedly
       clearInterval(timerInterval);
       dial.classList.remove('recording');
-      dialLabel.innerHTML = 'HOLD TO<br>HUM';
+      dialLabel.innerHTML = 'HOLD TO<br>HUM/SING';
 
       micBarContainer.classList.remove('show');
       if (animationId) cancelAnimationFrame(animationId);
@@ -631,42 +633,26 @@
       }
     }
 
-    // Adjust this to match whatever shape your n8n workflow returns.
     function parseAndShow(data) {
       setStatus('');
-      const humResults = data?.metadata?.humming;
-      if (humResults && humResults.length > 0) {
+      
+      const matches = data.matches;
+      if (data.transcript) {
+         statusEl.textContent = `You sang: "${data.transcript}"`;
+         statusEl.style.color = 'var(--plum)';
+      }
 
-        // The API often returns multiple possible matches. 
-        // To filter out Korean/Japanese matches, we skip results that contain CJK characters.
-        const cjkRegex = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/;
-        let validMatches = [];
-
-        for (const result of humResults) {
-          const title = result.title || '';
-          const artist = result.artists?.[0]?.name || '';
-          // If neither title nor artist contains Japanese/Korean/Chinese characters, pick it!
-          if (!cjkRegex.test(title) && !cjkRegex.test(artist)) {
-            const external = result.external_metadata || {};
-            validMatches.push({
-              title: result.title,
-              artist: result.artists?.[0]?.name,
-              album: result.album?.name,
-              score: result.score ? Math.round(parseFloat(result.score) * 100) : null,
-              spotifyId: external.spotify?.track?.id,
-              youtubeId: external.youtube?.vid
-            });
-
-            // Stop once we have 3 matches
-            if (validMatches.length >= 3) break;
-          }
-        }
-
-        if (validMatches.length > 0) {
-          showResults(validMatches);
-        } else {
-          showResults([]);
-        }
+      if (matches && matches.length > 0) {
+        let validMatches = matches.map(result => ({
+          title: result.title,
+          artist: result.artist,
+          album: result.album,
+          score: result.score,
+          source: result.source,
+          spotifyId: null, // iTunes doesn't return spotify id
+          youtubeId: null
+        }));
+        showResults(validMatches);
       } else {
         showResults([]);
       }
