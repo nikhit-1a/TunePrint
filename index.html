@@ -217,6 +217,18 @@
       border-radius: 999px;
       padding: 5px 12px;
       color: #6b6570;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lang-pill:hover {
+      background: #eee6dc;
+    }
+
+    .lang-pill.selected {
+      background: var(--plum);
+      color: white;
+      border-color: var(--plum);
     }
 
     .page {
@@ -315,9 +327,9 @@
       </div>
 
       <div class="lang-row">
-        <span class="lang-pill">English</span>
-        <span class="lang-pill">తెలుగు</span>
-        <span class="lang-pill">हिन्दी</span>
+        <span class="lang-pill" data-lang="en">English</span>
+        <span class="lang-pill" data-lang="te">తెలుగు</span>
+        <span class="lang-pill" data-lang="hi">हिन्दी</span>
       </div>
     </div>
 
@@ -354,6 +366,7 @@
 
     let mediaRecorder;
     let chunks = [];
+    let selectedLanguage = null;
     let stream;
     let startTime;
     let timerInterval;
@@ -622,6 +635,9 @@
     async function sendToServer(wavBlob) {
       const formData = new FormData();
       formData.append('audio', wavBlob, 'sample.wav');
+      if (selectedLanguage) {
+        formData.append('language', selectedLanguage);
+      }
 
       try {
         const res = await fetch(WEBHOOK_URL, { method: 'POST', body: formData });
@@ -674,6 +690,21 @@
     const navAbout = document.getElementById('navAbout');
     const pageHome = document.getElementById('pageHome');
     const pageAbout = document.getElementById('pageAbout');
+
+    // Language selection logic
+    const langPills = document.querySelectorAll('.lang-pill');
+    langPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        if (pill.classList.contains('selected')) {
+          pill.classList.remove('selected');
+          selectedLanguage = null;
+          return;
+        }
+        langPills.forEach(p => p.classList.remove('selected'));
+        pill.classList.add('selected');
+        selectedLanguage = pill.dataset.lang;
+      });
+    });
 
     navHome.addEventListener('click', (e) => {
       e.preventDefault();

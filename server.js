@@ -35,7 +35,11 @@ app.post('/api/identify', upload.single('audio'), async (req, res) => {
 
     // Define the Deepgram + iTunes pipeline
     const runLyricsSearch = async () => {
-      const deepgramRes = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&detect_language=true', {
+      // If a language is provided by the UI, force it. Otherwise fallback to detect_language.
+      const langParam = req.body.language ? `&language=${req.body.language}` : '&detect_language=true';
+      const deepgramUrl = `https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true${langParam}`;
+
+      const deepgramRes = await fetch(deepgramUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Token ${DEEPGRAM_API_KEY}`,
