@@ -339,13 +339,14 @@
         <p>Tuneprint is a web application that allows you to find songs by simply humming or singing the lyrics. Our hybrid audio
           processing engine automatically transcribes your singing and matches it against a massive music
           database in real-time.</p>
+        <p><strong>Powered by:</strong> ACRCloud for acoustic fingerprinting, Deepgram for AI speech-to-text, and Apple iTunes Search for the metadata library.</p>
         <p><strong>Disclaimer:</strong> This web application is strictly <strong>not for commercial use</strong>. It is
           provided for educational and non-profit purposes.</p>
         <p>Developed by Mv Nikhit :)</p>
       </div>
     </div>
 
-    <footer>Recognition powered by ACRCloud, Deepgram & Apple iTunes Search.</footer>
+    <footer>Tuneprint can make mistakes. Verify your results.</footer>
   </div>
 
   <script>
@@ -666,8 +667,8 @@
           album: result.album,
           score: result.score,
           source: result.source,
-          spotifyId: null, // iTunes doesn't return spotify id
-          youtubeId: null
+          spotifyId: null,
+          youtubeId: result.youtubeId || null
         }));
         showResults(validMatches);
       } else {

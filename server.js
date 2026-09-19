@@ -15,12 +15,16 @@ const upload = multer({
 });
 
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY;
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const ACR_HOST = process.env.ACR_HOST;
 const ACR_ACCESS_KEY = process.env.ACR_ACCESS_KEY;
 const ACR_ACCESS_SECRET = process.env.ACR_ACCESS_SECRET;
 
 if (!DEEPGRAM_API_KEY) {
   console.warn('Warning: DEEPGRAM_API_KEY is not set. Add it to your .env file.');
+}
+if (!YOUTUBE_API_KEY) {
+  console.warn('Warning: YOUTUBE_API_KEY is not set. Add it to your .env file.');
 }
 if (!ACR_HOST || !ACR_ACCESS_KEY || !ACR_ACCESS_SECRET) {
   console.warn('Warning: ACR_HOST / ACR_ACCESS_KEY / ACR_ACCESS_SECRET are not set. Add them to your .env file.');
@@ -54,15 +58,17 @@ app.post('/api/identify', upload.single('audio'), async (req, res) => {
 
       if (!transcript.trim()) return { transcript: '', matches: [] };
 
-      const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(transcript)}&entity=song&limit=3`);
-      if (!itunesRes.ok) throw new Error('iTunes API failed');
-      const itunesData = await itunesRes.json();
+      const youtubeUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(transcript + ' song')}&type=video&key=${YOUTUBE_API_KEY}&maxResults=3`;
+      const youtubeRes = await fetch(youtubeUrl);
+      if (!youtubeRes.ok) throw new Error('YouTube API failed');
+      const youtubeData = await youtubeRes.json();
 
-      const matches = itunesData.results.map(track => ({
-        title: track.trackName,
-        artist: track.artistName,
-        album: track.collectionName,
-        cover: track.artworkUrl100,
+      const matches = (youtubeData.items || []).map(item => ({
+        title: item.snippet.title,
+        artist: item.snippet.channelTitle,
+        album: null,
+        cover: item.snippet.thumbnails?.default?.url,
+        youtubeId: item.id.videoId,
         source: 'Lyrics'
       }));
 

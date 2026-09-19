@@ -1,11 +1,11 @@
 # Tuneprint
 
-A hybrid web application that identifies songs by listening to you hum or sing. Powered concurrently by the **ACRCloud Audio Recognition API** (for melody matching) and **Deepgram + Apple iTunes Search API** (for lyrics transcription and matching).
+A hybrid web application that identifies songs by listening to you hum or sing. Powered concurrently by the **ACRCloud Audio Recognition API** (for melody matching) and **Deepgram + YouTube Data API** (for lyrics transcription and matching).
 
 ## Features
 - **Hybrid Recognition Engine**: Hold the button, hum a tune, or sing the lyrics. The app runs two distinct recognition engines at the same time:
   - **Melody Search**: Analyzes your humming against ACRCloud's massive acoustic fingerprint database.
-  - **Lyrics Search**: Uses Deepgram's industry-leading Nova-2 AI to transcribe your singing in real-time (supporting Hindi, Telugu, English, etc.) and searches Apple's iTunes database for matches.
+  - **Lyrics Search**: Uses Deepgram's industry-leading Nova-2 AI to transcribe your singing in real-time (supporting Hindi, Telugu, English, etc.) and searches YouTube's massive database for exact lyric matches.
 - **Fail-Safe Architecture**: Both engines run independently. If one API fails to find a match, it seamlessly falls back on the results of the other.
 - **Smart Filtering & Badges**: Evaluates results and visually tags them in the UI with badges (`🎵 Found via Melody` or `🎤 Found via Lyrics`).
 - **External Links**: Automatically generates clickable Spotify and YouTube search links for every recognized song.
@@ -17,6 +17,7 @@ A hybrid web application that identifies songs by listening to you hum or sing. 
 - Node.js (v18 or higher recommended)
 - An [ACRCloud](https://www.acrcloud.com/) account and project credentials
 - A [Deepgram](https://deepgram.com/) API key (for fast AI transcription)
+- A [YouTube Data API v3](https://console.cloud.google.com/) key (for exact lyrics search)
 
 ### Installation
 
@@ -36,6 +37,9 @@ A hybrid web application that identifies songs by listening to you hum or sing. 
    ```bash
    # Deepgram API (For Lyrics matching)
    DEEPGRAM_API_KEY=your_deepgram_api_key
+
+   # YouTube Data API (For Lyrics matching)
+   YOUTUBE_API_KEY=your_youtube_api_key
 
    # ACRCloud API (For Humming/Melody matching)
    ACR_HOST=identify-eu-west-1.acrcloud.com
@@ -57,4 +61,4 @@ A hybrid web application that identifies songs by listening to you hum or sing. 
 ## Tech Stack
 - **Frontend**: Vanilla HTML, CSS, JavaScript (MediaRecorder API for audio capture)
 - **Backend**: Node.js, Express, Multer
-- **APIs**: Deepgram (Speech-to-Text), Apple iTunes Search, ACRCloud (Audio Fingerprinting)
+- **APIs**: Deepgram (Speech-to-Text), YouTube Data API, ACRCloud (Audio Fingerprinting)
