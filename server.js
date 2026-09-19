@@ -58,7 +58,9 @@ app.post('/api/identify', upload.single('audio'), async (req, res) => {
 
       if (!transcript.trim()) return { transcript: '', matches: [] };
 
-      const youtubeUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(transcript + ' song')}&type=video&key=${YOUTUBE_API_KEY}&maxResults=3`;
+      // Wrap the transcript in quotes for an exact match, and append keywords to find official music tracks
+      const searchQuery = `"${transcript}" official audio OR official video`;
+      const youtubeUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&videoCategoryId=10&key=${YOUTUBE_API_KEY}&maxResults=3`;
       const youtubeRes = await fetch(youtubeUrl);
       if (!youtubeRes.ok) throw new Error('YouTube API failed');
       const youtubeData = await youtubeRes.json();

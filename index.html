@@ -15,6 +15,29 @@
       --line: #d8d0c2;
       --ok: #2f6b4f;
       --err: #a13d2b;
+      --text-muted: #6b6570;
+      --text-sub: #4b4650;
+      --pill-hover: #eee6dc;
+      --nav-link: #8a8390;
+      --footer-text: #b0aab5;
+      --result-bg: #fffdf9;
+    }
+
+    body.dark {
+      --ink: #f0e6d2;
+      --paper: #1c1a1e;
+      --brass: #cfa227;
+      --brass-deep: #b8860b;
+      --plum: #a980b9;
+      --line: #423e47;
+      --ok: #479e78;
+      --err: #d65a45;
+      --text-muted: #a39ca8;
+      --text-sub: #cfc8d4;
+      --pill-hover: #322f36;
+      --nav-link: #b0aab5;
+      --footer-text: #6b6570;
+      --result-bg: #262329;
     }
 
     * {
@@ -58,7 +81,7 @@
     .sub {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 14.5px;
-      color: #6b6570;
+      color: var(--text-muted);
       max-width: 320px;
       margin: 0 0 44px;
       line-height: 1.5;
@@ -147,7 +170,7 @@
       margin-top: 28px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 14px;
-      color: #6b6570;
+      color: var(--text-muted);
       min-height: 20px;
     }
 
@@ -162,7 +185,7 @@
       border: 1px solid var(--line);
       border-radius: 4px;
       padding: 22px 20px;
-      background: #fffdf9;
+      background: var(--result-bg);
       display: none;
       text-align: left;
     }
@@ -191,14 +214,14 @@
     .result .artist {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 14.5px;
-      color: #4b4650;
+      color: var(--text-sub);
       margin: 0 0 14px;
     }
 
     .result .meta {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 12.5px;
-      color: #8a8390;
+      color: var(--nav-link);
       display: flex;
       gap: 14px;
       flex-wrap: wrap;
@@ -216,13 +239,13 @@
       border: 1px solid var(--line);
       border-radius: 999px;
       padding: 5px 12px;
-      color: #6b6570;
+      color: var(--text-muted);
       cursor: pointer;
       transition: all 0.2s;
     }
 
     .lang-pill:hover {
-      background: #eee6dc;
+      background: var(--pill-hover);
     }
 
     .lang-pill.selected {
@@ -253,7 +276,7 @@
     .nav a {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       text-decoration: none;
-      color: #8a8390;
+      color: var(--nav-link);
       font-size: 14px;
       font-weight: 500;
       transition: color 0.2s;
@@ -272,7 +295,7 @@
     .about-content {
       text-align: left;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      color: #4b4650;
+      color: var(--text-sub);
       line-height: 1.6;
       font-size: 15px;
       max-width: 400px;
@@ -291,13 +314,30 @@
       margin-top: 56px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 11.5px;
-      color: #b0aab5;
+      color: var(--footer-text);
+    }
+
+    .theme-toggle {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      background: none;
+      border: none;
+      color: var(--nav-link);
+      cursor: pointer;
+      font-size: 20px;
+      transition: color 0.2s;
+    }
+
+    .theme-toggle:hover {
+      color: var(--plum);
     }
   </style>
 </head>
 
 <body>
   <div class="wrap">
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme">🌙</button>
     <nav class="nav">
       <a href="#" id="navHome" class="active">Home</a>
       <a href="#" id="navAbout">About</a>
@@ -339,7 +379,7 @@
         <p>Tuneprint is a web application that allows you to find songs by simply humming or singing the lyrics. Our hybrid audio
           processing engine automatically transcribes your singing and matches it against a massive music
           database in real-time.</p>
-        <p><strong>Powered by:</strong> ACRCloud for acoustic fingerprinting, Deepgram for AI speech-to-text, and Apple iTunes Search for the metadata library.</p>
+        <p><strong>Powered by:</strong> ACRCloud for acoustic fingerprinting, Deepgram for AI speech-to-text, and the YouTube Data API for the metadata library.</p>
         <p><strong>Disclaimer:</strong> This web application is strictly <strong>not for commercial use</strong>. It is
           provided for educational and non-profit purposes.</p>
         <p>Developed by Mv Nikhit :)</p>
@@ -721,6 +761,26 @@
       navHome.classList.remove('active');
       pageAbout.classList.add('active');
       pageHome.classList.remove('active');
+    });
+
+    // Theme toggle logic
+    const themeToggle = document.getElementById('themeToggle');
+    
+    // Check saved theme or system preference
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.body.classList.add('dark');
+      themeToggle.textContent = '☀️';
+    }
+
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      if (document.body.classList.contains('dark')) {
+        localStorage.setItem('theme', 'dark');
+        themeToggle.textContent = '☀️';
+      } else {
+        localStorage.setItem('theme', 'light');
+        themeToggle.textContent = '🌙';
+      }
     });
   </script>
 </body>
