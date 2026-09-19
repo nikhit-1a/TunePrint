@@ -338,9 +338,10 @@
 
   <script>
     // ---- CONFIGURE THIS -------------------------------------------------
-    // While testing locally, leave this as-is. Once you deploy the backend
-    // (e.g. to Render), replace it with that URL + /api/identify.
-    const WEBHOOK_URL = "http://localhost:3000/api/identify";
+    // Automatically routes to localhost for local testing (when opening the HTML file directly)
+    // and to the relative /api/identify endpoint when hosted on Vercel.
+    const isLocal = window.location.protocol === 'file:';
+    const WEBHOOK_URL = isLocal ? "http://localhost:3000/api/identify" : "/api/identify";
     // ----------------------------------------------------------------------
 
     const dial = document.getElementById('dial');
