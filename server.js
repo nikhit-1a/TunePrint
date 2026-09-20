@@ -58,16 +58,16 @@ app.post('/api/identify', upload.single('audio'), async (req, res) => {
 
       if (!transcript.trim()) return { transcript: '', matches: [] };
 
-      // Wrap the transcript in quotes for an exact match, and append keywords to find official music tracks
-      const searchQuery = `"${transcript}" official audio OR official video`;
+      // Use the transcript and append keywords to find official music tracks
+      const searchQuery = `${transcript} official audio OR official video`;
       const youtubeUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(searchQuery)}&type=video&videoCategoryId=10&key=${YOUTUBE_API_KEY}&maxResults=3`;
       const youtubeRes = await fetch(youtubeUrl);
       if (!youtubeRes.ok) throw new Error('YouTube API failed');
       const youtubeData = await youtubeRes.json();
 
       const matches = (youtubeData.items || []).map(item => ({
-        title: item.snippet.title,
-        artist: item.snippet.channelTitle,
+        title: item.snippet.title || '',
+        artist: item.snippet.channelTitle || '',
         album: null,
         cover: item.snippet.thumbnails?.default?.url,
         youtubeId: item.id.videoId,
@@ -141,18 +141,24 @@ app.post('/api/identify', upload.single('audio'), async (req, res) => {
       finalMatches.push(...melodyResult.value.matches);
     }
 
-    // Add lyrics matches, filtering out duplicates
-    if (lyricsResult.status === 'fulfilled') {
+    // Check if we have a very high confidence melody match (>= 96%)
+    const hasHighConfidenceMelody = finalMatches.some(m => m.score >= 96);
+
+    // Only append lyrics matches if we don't have a near-perfect melody match
+    if (!hasHighConfidenceMelody && lyricsResult.status === 'fulfilled') {
       for (const lyricMatch of lyricsResult.value.matches) {
-        const isDuplicate = finalMatches.some(m => 
-          m.title.toLowerCase() === lyricMatch.title.toLowerCase() && 
-          m.artist.toLowerCase() === lyricMatch.artist.toLowerCase()
+        const isDuplicate = finalMatches.some(m =>
+          (m.title || '').toLowerCase() === (lyricMatch.title || '').toLowerCase() &&
+          (m.artist || '').toLowerCase() === (lyricMatch.artist || '').toLowerCase()
         );
         if (!isDuplicate) {
           finalMatches.push(lyricMatch);
         }
       }
     }
+
+    // Cap the results at a maximum of 3 to keep the UI clean
+    finalMatches = finalMatches.slice(0, 4);
 
     return res.json({ transcript, matches: finalMatches });
   } catch (err) {
