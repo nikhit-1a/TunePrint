@@ -133,6 +133,13 @@ app.post('/api/identify', upload.single('audio'), async (req, res) => {
       runMelodySearch()
     ]);
 
+    if (lyricsResult.status === 'rejected') {
+      console.error('Lyrics pipeline error:', lyricsResult.reason);
+    }
+    if (melodyResult.status === 'rejected') {
+      console.error('Melody pipeline error:', melodyResult.reason);
+    }
+
     const transcript = lyricsResult.status === 'fulfilled' ? lyricsResult.value.transcript : '';
     let finalMatches = [];
 
