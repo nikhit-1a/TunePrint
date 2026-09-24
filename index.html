@@ -332,6 +332,94 @@
     .theme-toggle:hover {
       color: var(--plum);
     }
+
+    /* Modal styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-content {
+      background: var(--paper);
+      width: 100%;
+      height: 100%;
+      max-width: 600px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    
+    @media (min-width: 600px) {
+      .modal-content {
+        height: 90vh;
+        border-radius: 12px;
+      }
+    }
+
+    .modal-header {
+      padding: 24px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 0;
+      color: var(--ink);
+    }
+    
+    .modal-artist {
+      font-size: 14px;
+      color: var(--text-sub);
+      margin-top: 4px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--ink);
+      font-size: 32px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      transition: color 0.2s;
+    }
+
+    .close-btn:hover {
+      color: var(--err);
+    }
+
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+      font-family: 'Georgia', 'Iowan Old Style', serif;
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--ink);
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 
@@ -391,6 +479,21 @@
         <p><strong>Disclaimer:</strong> This web application is strictly <strong>not for commercial use</strong>. It is
           provided for educational and non-profit purposes.</p>
         <p>Developed by Mv Nikhit :)</p>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="lyricsModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h3 class="modal-title" id="lyricsTitle">Song Title</h3>
+            <div class="modal-artist" id="lyricsArtist">Artist Name</div>
+          </div>
+          <button class="close-btn" id="closeLyricsBtn">&times;</button>
+        </div>
+        <div class="modal-body" id="lyricsBody">
+          Loading lyrics...
+        </div>
       </div>
     </div>
 
@@ -461,6 +564,8 @@
           } else {
             linksHtml += `<a href="https://www.youtube.com/results?search_query=${searchQuery}" target="_blank" style="color: #ff0000; text-decoration: none; font-weight: bold;">Search on YouTube</a>`;
           }
+
+          linksHtml += `<button onclick="toggleLyrics(this, '${encodeURIComponent(artist)}', '${encodeURIComponent(title)}')" style="margin-left: 12px; background: none; border: none; color: var(--plum); font-weight: bold; font-family: inherit; font-size: inherit; cursor: pointer; text-decoration: underline; padding: 0;">View Lyrics</button>`;
 
           let metaHtml = '';
           if (album) metaHtml += `<span>${album}</span>`;
@@ -721,6 +826,59 @@
         showResults(validMatches);
       } else {
         showResults([]);
+      }
+    }
+
+    document.getElementById('closeLyricsBtn').addEventListener('click', () => {
+      document.getElementById('lyricsModal').classList.remove('show');
+    });
+
+    document.getElementById('lyricsModal').addEventListener('click', (e) => {
+      if (e.target.id === 'lyricsModal') {
+        e.target.classList.remove('show');
+      }
+    });
+
+    async function toggleLyrics(btn, encodedArtist, encodedTitle) {
+      const lyricsModal = document.getElementById('lyricsModal');
+      const lyricsTitle = document.getElementById('lyricsTitle');
+      const lyricsArtist = document.getElementById('lyricsArtist');
+      const lyricsBody = document.getElementById('lyricsBody');
+      
+      const artist = decodeURIComponent(encodedArtist);
+      const title = decodeURIComponent(encodedTitle);
+      
+      lyricsTitle.textContent = title;
+      lyricsArtist.textContent = artist;
+      lyricsBody.textContent = 'Searching for lyrics...';
+      lyricsModal.classList.add('show');
+      
+      try {
+        // Try lrclib.net first (better catalog)
+        const lrclibRes = await fetch(`https://lrclib.net/api/search?track_name=${encodedTitle}&artist_name=${encodedArtist}`);
+        if (lrclibRes.ok) {
+          const lrclibData = await lrclibRes.json();
+          const match = lrclibData.find(item => item.plainLyrics);
+          if (match && match.plainLyrics) {
+            lyricsBody.textContent = match.plainLyrics;
+            return;
+          }
+        }
+        
+        // Fallback to lyrics.ovh
+        const ovhRes = await fetch(`https://api.lyrics.ovh/v1/${encodedArtist}/${encodedTitle}`);
+        if (ovhRes.ok) {
+          const ovhData = await ovhRes.json();
+          if (ovhData.lyrics) {
+            lyricsBody.textContent = ovhData.lyrics;
+            return;
+          }
+        }
+        
+        lyricsBody.textContent = 'Lyrics not available for this song.';
+      } catch (err) {
+        console.error('Lyrics error:', err);
+        lyricsBody.textContent = 'An error occurred while fetching lyrics.';
       }
     }
 

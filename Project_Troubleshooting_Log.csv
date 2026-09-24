@@ -20,3 +20,4 @@ Date,Version,Problem,Solution
 "2026-09-20","v2.2.0","Missing Error Tracking","Added behind-the-scenes error logs to easily identify what was breaking during a search."
 "2026-09-20","v2.2.0","Overcrowded Search Results","Capped the max results and stopped showing lyrics matches if the humming match was already highly accurate (96%+)."
 "2026-09-20","v2.2.0","Confusing User Experience","Updated the About page with tips reminding users to allow microphone access, pick a language, and ensure clear audio."
+"2026-09-24","v2.3.0","No Option to View Full Lyrics","Added a 'View Lyrics' button to song results. Integrated LRCLIB as the primary API with a fallback to lyrics.ovh to reliably fetch full song lyrics. Designed a full-screen modal overlay with a close button and backdrop-blur to display the lyrics beautifully without navigating away from the page."
